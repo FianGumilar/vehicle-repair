@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/FianGumilar/vehicle-repair/internal/config"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func GetDatabaseConnection(conf config.Config) *sql.DB {
