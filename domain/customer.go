@@ -12,7 +12,14 @@ type Customer struct {
 	CratedAt time.Time `db:"crated_at"`
 }
 
+type CustomerData struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
+}
+
 type CustomerRepository interface {
+	FindAll(ctx context.Context) ([]Customer, error)
 	FindById(ctx context.Context, id int64) (Customer, error)
 	FindByIds(ctx context.Context, id []int64) ([]Customer, error)
 	FindByName(ctx context.Context, name string) (Customer, error)
@@ -21,4 +28,6 @@ type CustomerRepository interface {
 }
 
 type CustomerService interface {
+	All(ctx context.Context) ApiResponse
+	Save(ctx context.Context, customer CustomerData) ApiResponse
 }

@@ -16,12 +16,22 @@ func NewRepository(con *sql.DB) domain.CustomerRepository {
 	return &repository{db: goqu.New("default", con)}
 }
 
+func (r repository) FindAll(ctx context.Context) (customers []domain.Customer, err error) {
+	dataset := r.db.From("customers").Order(goqu.I("name").Asc())
+
+	if errScan := dataset.ScanStructsContext(ctx, &customers); err != nil {
+		return nil, errScan
+	}
+	return
+
+}
+
 func (r repository) FindById(ctx context.Context, id int64) (customers domain.Customer, err error) {
 	dataset := r.db.From("customers").Where(goqu.Ex{ // where the keys are string that will be used as Identifiers and values
 		"id": id,
 	})
 
-	if _, err := dataset.ScanStructContext(ctx, &customers); err != nil {
+	if _, errScan := dataset.ScanStructContext(ctx, &customers); errScan != nil {
 		return domain.Customer{}, nil
 	}
 
@@ -40,9 +50,9 @@ func (r repository) FindByIds(ctx context.Context, ids []int64) (customer []doma
 	return
 }
 
-func (r repository) FindByName(ctx context.Context, name string) (customer domain.Customer,err error) {
+func (r repository) FindByName(ctx context.Context, name string) (customer domain.Customer, err error) {
 	dataset := r.db.From("customers").Where(goqu.Ex{ //where the keys are string that will be used as Identifiers and values
-		"name": name, 
+		"name": name,
 	})
 
 	if _, err := dataset.ScanStructContext(ctx, &customer); err != nil {
@@ -52,9 +62,9 @@ func (r repository) FindByName(ctx context.Context, name string) (customer domai
 	return
 }
 
-func (r repository) FindByPhone(ctx context.Context, phone string) (customer domain.Customer,err error) {
+func (r repository) FindByPhone(ctx context.Context, phone string) (customer domain.Customer, err error) {
 	dataset := r.db.From("customers").Where(goqu.Ex{ // where the keys are string that will be used as Identifiers and values
-		"phone": phone, 
+		"phone": phone,
 	})
 
 	if _, err := dataset.ScanStructContext(ctx, &customer); err != nil {
@@ -65,22 +75,24 @@ func (r repository) FindByPhone(ctx context.Context, phone string) (customer dom
 }
 
 func (r repository) Insert(ctx context.Context, customer *domain.Customer) error {
-	executor := r.db.Insert("customers").Rows(*customer).Executor()
+	query := `
+		INSERT INTO customers (name, phone, created_at)
+		VALUES (?, ?, ?)
+		RETURNING id
+	`
 
-	// Insert: retrieve table name
-	// Rows: get the value stored in the variable
-	// Executor: return object `goqu.Executor & execute sql`
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-	result, err := executor.Exec()
+	var id int64
+	err = stmt.QueryRowContext(ctx, customer.Name, customer.Phone, customer.CratedAt).Scan(&id)
 	if err != nil {
 		return err
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
 	customer.ID = id
-
-	return err
+	return nil
 }
