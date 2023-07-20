@@ -19,7 +19,7 @@ func NewRepository(con *sql.DB) domain.VehicleRepository {
 func (r repository) FindByVin(ctx context.Context, vin string) (vehicle domain.Vehicle, err error) {
 	dataset := r.db.From("vehicles").Where(goqu.Ex{
 		"vin": vin,
-	})
+	}).Limit(1)
 
 	_, err = dataset.ScanStructContext(ctx, &vehicle)
 	return
@@ -27,7 +27,7 @@ func (r repository) FindByVin(ctx context.Context, vin string) (vehicle domain.V
 
 func (r repository) FindById(ctx context.Context, id int64) (vehicle domain.Vehicle, err error) {
 	dataset := r.db.From("vehicles").Where(goqu.Ex{
-		"id": vehicle.ID,
+		"id": id,
 	})
 
 	_, err = dataset.ScanStructContext(ctx, &vehicle)

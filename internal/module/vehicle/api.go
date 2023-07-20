@@ -18,7 +18,8 @@ func NewApi(app *fiber.App, vehicleService domain.VehicleService) {
 		vehicleService: vehicleService,
 	}
 
-	app.Get("v1/vehicle-history", api.GetVehicleHistory)
+	app.Get("/v1/vehicle-history", api.GetVehicleHistory)
+	app.Post("/v1/vehicle-history", api.SaveVehicle)
 }
 
 func (a api) GetVehicleHistory(ctx *fiber.Ctx) error {
@@ -36,6 +37,28 @@ func (a api) GetVehicleHistory(ctx *fiber.Ctx) error {
 	}
 
 	apiResponse := a.vehicleService.FindHistorical(c, vin)
+	utils.ResponseInterceptor(c, &apiResponse)
+
+	return ctx.Status(fiber.StatusOK).JSON(apiResponse)
+}
+
+func (a api) SaveVehicle(ctx *fiber.Ctx) error {
+	c, cancel := context.WithTimeout(ctx.Context(), 30*time.Second)
+	defer cancel()
+
+	var req domain.VehicleHistoricalRequest
+
+	if err := ctx.BodyParser(&req); err != nil {
+		apiResponse := domain.ApiResponse{
+			Code:    "01",
+			Message: "Invalid Body",
+		}
+		utils.ResponseInterceptor(c, &apiResponse)
+
+		return ctx.Status(fiber.StatusBadRequest).JSON(apiResponse)
+	}
+
+	apiResponse := a.vehicleService.StoreVehicleHistory(c, req)
 	utils.ResponseInterceptor(c, &apiResponse)
 
 	return ctx.Status(fiber.StatusOK).JSON(apiResponse)

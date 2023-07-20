@@ -21,8 +21,8 @@ func (s service) FindHistorical(ctx context.Context, vin string) domain.ApiRespo
 	vehicle, err := s.vehicleRepository.FindByVin(ctx, vin)
 	if err != nil {
 		return domain.ApiResponse{
-			Code:    "911",
-			Message: "SYSTEM MALFUNCTION",
+			Code:    "99",
+			Message: err.Error(),
 		}
 	}
 	if vehicle == (domain.Vehicle{}) {
@@ -66,4 +66,48 @@ func (s service) FindHistorical(ctx context.Context, vin string) domain.ApiRespo
 		Message: "APPROVED",
 		Data:    result,
 	}
+}
+
+func (s service) StoreVehicleHistory(ctx context.Context, request domain.VehicleHistoricalRequest) domain.ApiResponse {
+	vehicle, err := s.vehicleRepository.FindByVin(ctx, request.VIN)
+	if err != nil {
+		return domain.ApiResponse{
+			Code:    "911",
+			Message: err.Error(),
+		}
+	}
+
+	if vehicle == (domain.Vehicle{}) {
+		vehicle.VIN = request.VIN
+		vehicle.Brand = request.Brand
+
+		err = s.vehicleRepository.Insert(ctx, &vehicle)
+		if err != nil {
+			return domain.ApiResponse{
+				Code:    "911",
+				Message: err.Error(),
+			}
+		}
+	}
+
+	history := domain.HistoryDetails{
+		VehicleID:  vehicle.ID,
+		Pic:        request.Pic,
+		PlatNumber: request.PlatNumber,
+		Notes:      request.Notes,
+		CustomerID: request.CustomerId,
+	}
+
+	err = s.historyRepository.Insert(ctx, &history)
+	if err != nil {
+		return domain.ApiResponse{
+			Code:    "99",
+			Message: err.Error(),
+		}
+	}
+	return domain.ApiResponse{
+		Code:    "00",
+		Message: "Approved",
+	}
+
 }

@@ -29,15 +29,25 @@ func (r repository) FindByVehicle(ctx context.Context, id int64) (result []domai
 func (r repository) Insert(ctx context.Context, detail *domain.HistoryDetails) error {
 	detail.CreatedAt = time.Now().UTC()
 
-	executor := r.db.Insert("history_details").Rows(goqu.Record{
-		"pic":         detail.Pic,
-		"plat_number": detail.PlatNumber,
-		"notes":       detail.Notes,
-		"customer_id": detail.CustomerID,
-		"vehicle_id":  detail.VehicleID,
-		"created_id":  detail.CreatedAt,
-	}).Returning("id").Executor()
+	query := "INSERT INTO history_details (pic, plat_number, notes, customer_id, vehicle_id) VALUES (?, ?, ?, ?, ?)"
 
-	_, err := executor.ScanStructContext(ctx, detail)
-	return err
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, detail.Pic, detail.PlatNumber, detail.Notes, detail.CustomerID, detail.VehicleID)
+	if err != nil {
+		return err
+	}
+
+	insertedID, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	detail.ID = insertedID
+
+	return nil
 }

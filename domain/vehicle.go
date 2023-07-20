@@ -20,6 +20,7 @@ type VehicleRepository interface {
 
 type VehicleService interface {
 	FindHistorical(ctx context.Context, vin string) ApiResponse
+	StoreVehicleHistory(ctx context.Context, request VehicleHistoricalRequest) ApiResponse
 }
 
 type VehicleHistorical struct {
@@ -27,4 +28,13 @@ type VehicleHistorical struct {
 	VIN         string        `json:"vin"`
 	Brand       string        `json:"brand"`
 	HistoryData []HistoryData `json:"history_data"`
+}
+
+type VehicleHistoricalRequest struct {
+	VIN        string `json:"vin"`
+	Brand      string `json:"brand"`
+	Pic        string `json:"pic"`
+	PlatNumber string `json:"plat_number"`
+	Notes      string `json:"notes"`
+	CustomerId int64  `json:"customer_id"`
 }
