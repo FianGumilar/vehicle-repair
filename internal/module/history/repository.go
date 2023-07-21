@@ -3,7 +3,6 @@ package history
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
 	"github.com/doug-martin/goqu/v9"
@@ -18,18 +17,41 @@ func NewRepository(con *sql.DB) domain.HistoryRepository {
 }
 
 func (r repository) FindByVehicle(ctx context.Context, id int64) (result []domain.HistoryDetails, err error) {
-	dataset := r.db.From("history_details").Where(goqu.Ex{
-		"vehicle_id": id,
-	}).Order(goqu.I("id").Asc())
 
-	_, err = dataset.ScanStructContext(ctx, &result)
-	return
+	query := `SELECT * FROM history_details WHERE vehicle_id = ? ORDER BY id ASC`
+	rows, err := r.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var historyDetail domain.HistoryDetails
+		var CreatedAt sql.NullTime
+
+		err = rows.Scan(
+			&historyDetail.ID,
+			&historyDetail.Pic,
+			&historyDetail.PlatNumber,
+			&historyDetail.Notes,
+			&historyDetail.CustomerID,
+			&historyDetail.VehicleID,
+			&CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, historyDetail)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (r repository) Insert(ctx context.Context, detail *domain.HistoryDetails) error {
-	detail.CreatedAt = time.Now().UTC()
 
-	query := "INSERT INTO history_details (pic, plat_number, notes, customer_id, vehicle_id) VALUES (?, ?, ?, ?, ?)"
+	query := "INSERT INTO history_details (pic,plat_number,notes,customer_id,vehicle_id) VALUES (?, ?, ?, ?, ?)"
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

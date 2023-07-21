@@ -5,32 +5,46 @@ import (
 	"database/sql"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
-	"github.com/doug-martin/goqu/v9"
 )
 
 type repository struct {
-	db *goqu.Database
+	db *sql.DB
 }
 
 func NewRepository(con *sql.DB) domain.VehicleRepository {
-	return &repository{db: goqu.New("default", con)}
+	return &repository{db: con}
 }
 
-func (r repository) FindByVin(ctx context.Context, vin string) (vehicle domain.Vehicle, err error) {
-	dataset := r.db.From("vehicles").Where(goqu.Ex{
-		"vin": vin,
-	}).Limit(1)
+func (r repository) FindByVin(ctx context.Context, vin string) (domain.Vehicle, error) {
+	query := `SELECT * FROM vehicles WHERE vin = ? LIMIT 1`
 
-	_, err = dataset.ScanStructContext(ctx, &vehicle)
-	return
+	var vehicle domain.Vehicle
+
+	err := r.db.QueryRowContext(ctx, query, vin).Scan(
+		&vehicle.ID,
+		&vehicle.VIN,
+		&vehicle.Brand,
+		&vehicle.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return vehicle, nil
+	}
+
+	return vehicle, err
 }
 
 func (r repository) FindById(ctx context.Context, id int64) (vehicle domain.Vehicle, err error) {
-	dataset := r.db.From("vehicles").Where(goqu.Ex{
-		"id": id,
-	})
-
-	_, err = dataset.ScanStructContext(ctx, &vehicle)
+	query := `SELECT * FROM vehicles WHERE id = ? LIMIT 1`
+	err = r.db.QueryRowContext(ctx, query, id).Scan(
+		&vehicle.ID,
+		&vehicle.VIN,
+		&vehicle.Brand,
+		&vehicle.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return vehicle, nil
+	}
 	return
 }
 
