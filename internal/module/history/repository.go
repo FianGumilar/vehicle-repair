@@ -5,15 +5,14 @@ import (
 	"database/sql"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
-	"github.com/doug-martin/goqu/v9"
 )
 
 type repository struct {
-	db *goqu.Database
+	db *sql.DB
 }
 
 func NewRepository(con *sql.DB) domain.HistoryRepository {
-	return &repository{db: goqu.New("default", con)}
+	return &repository{db: con}
 }
 
 func (r repository) FindByVehicle(ctx context.Context, id int64) (result []domain.HistoryDetails, err error) {

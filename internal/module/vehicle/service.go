@@ -66,6 +66,8 @@ func (s service) FindHistorical(ctx context.Context, vin string) domain.ApiRespo
 		Message: "APPROVED",
 		Data:    result,
 	}
+
+	
 }
 
 func (s service) StoreVehicleHistory(ctx context.Context, request domain.VehicleHistoricalRequest) domain.ApiResponse {
