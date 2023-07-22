@@ -5,73 +5,78 @@ import (
 	"database/sql"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
-	"github.com/doug-martin/goqu/v9"
 )
 
 type repository struct {
-	db *goqu.Database
+	db *sql.DB
 }
 
 func NewRepository(con *sql.DB) domain.CustomerRepository {
-	return &repository{db: goqu.New("default", con)}
+	return &repository{db: con}
 }
 
 func (r repository) FindAll(ctx context.Context) (customers []domain.Customer, err error) {
-	dataset := r.db.From("customers").Order(goqu.I("name").Asc())
+	query := `SELECT * FROM customers ORDER BY name ASC`
 
-	if errScan := dataset.ScanStructsContext(ctx, &customers); err != nil {
-		return nil, errScan
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
 	}
-	return
+	defer rows.Close()
 
+	for rows.Next() {
+		var customer domain.Customer
+
+		err := rows.Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.CretedAt)
+		if err != nil {
+			return nil, err
+		}
+		customers = append(customers, customer)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return customers, nil
 }
 
 func (r repository) FindById(ctx context.Context, id int64) (customers domain.Customer, err error) {
-	dataset := r.db.From("customers").Where(goqu.Ex{ // where the keys are string that will be used as Identifiers and values
-		"id": id,
-	})
+	query := `SELECT * FROM customers WHERE id = ? LIMIT 1`
 
-	if _, errScan := dataset.ScanStructContext(ctx, &customers); errScan != nil {
-		return domain.Customer{}, nil
+	err = r.db.QueryRowContext(ctx, query, id).Scan(
+		&customers.ID,
+		&customers.Name,
+		&customers.Phone,
+		&customers.CretedAt,
+	)
+	if err == sql.ErrNoRows {
+		return customers, nil
 	}
-
 	return
 }
 
-func (r repository) FindByIds(ctx context.Context, ids []int64) (customer []domain.Customer, err error) {
-	dataset := r.db.From("customers").Where(goqu.Ex{ // where the keys are string that will be used as Identifiers and values
-		"id": ids,
-	})
+func (r repository) FindByIds(ctx context.Context, ids []int64) (customers []domain.Customer, err error) {
+	query := `SELECT * FROM customers WHERE ids = ? LIMIT 1`
 
-	if err := dataset.ScanStructsContext(ctx, &customer); err != nil {
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	return
-}
-
-func (r repository) FindByName(ctx context.Context, name string) (customer domain.Customer, err error) {
-	dataset := r.db.From("customers").Where(goqu.Ex{ //where the keys are string that will be used as Identifiers and values
-		"name": name,
-	})
-
-	if _, err := dataset.ScanStructContext(ctx, &customer); err != nil {
-		return domain.Customer{}, nil
+	for rows.Next() {
+		var customer domain.Customer
+		err := rows.Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.CretedAt)
+		if err != nil {
+			return nil, err
+		}
+		customers = append(customers, customer)
 	}
 
-	return
-}
-
-func (r repository) FindByPhone(ctx context.Context, phone string) (customer domain.Customer, err error) {
-	dataset := r.db.From("customers").Where(goqu.Ex{ // where the keys are string that will be used as Identifiers and values
-		"phone": phone,
-	})
-
-	if _, err := dataset.ScanStructContext(ctx, &customer); err != nil {
-		return domain.Customer{}, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
-
-	return
+	return customers, nil
 }
 
 func (r repository) Insert(ctx context.Context, customer *domain.Customer) error {
@@ -88,7 +93,7 @@ func (r repository) Insert(ctx context.Context, customer *domain.Customer) error
 	defer stmt.Close()
 
 	var id int64
-	err = stmt.QueryRowContext(ctx, customer.Name, customer.Phone, customer.CratedAt).Scan(&id)
+	err = stmt.QueryRowContext(ctx, customer.Name, customer.Phone, customer.CretedAt).Scan(&id)
 	if err != nil {
 		return err
 	}
