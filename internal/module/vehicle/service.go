@@ -2,9 +2,12 @@ package vehicle
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
+	"github.com/go-playground/validator/v10"
 )
 
 type service struct {
@@ -19,6 +22,7 @@ func NewService(vehicleRepository domain.VehicleRepository, historyRepository do
 // FindHistorical implements domain.VehicleService.
 func (s service) FindHistorical(ctx context.Context, vin string) domain.ApiResponse {
 	vehicle, err := s.vehicleRepository.FindByVin(ctx, vin)
+
 	if err != nil {
 		return domain.ApiResponse{
 			Code:    "99",
@@ -67,7 +71,6 @@ func (s service) FindHistorical(ctx context.Context, vin string) domain.ApiRespo
 		Data:    result,
 	}
 
-	
 }
 
 func (s service) StoreVehicleHistory(ctx context.Context, request domain.VehicleHistoricalRequest) domain.ApiResponse {
@@ -98,6 +101,20 @@ func (s service) StoreVehicleHistory(ctx context.Context, request domain.Vehicle
 		PlatNumber: request.PlatNumber,
 		Notes:      request.Notes,
 		CustomerID: request.CustomerId,
+	}
+
+	validate := validator.New()
+	errValidate := validate.Struct(history)
+	if errValidate != nil {
+		//Ambil pesan spesifik dari field
+		var errMsg string
+		for _, err := range errValidate.(validator.ValidationErrors) {
+			errMsg = fmt.Sprintf("%s %s is required:", errMsg, err.Field())
+		}
+		return domain.ApiResponse{
+			Code:    "400",
+			Message: strings.TrimSpace(errMsg),
+		}
 	}
 
 	err = s.historyRepository.Insert(ctx, &history)
