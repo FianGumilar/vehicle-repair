@@ -2,9 +2,12 @@ package customer
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FianGumilar/vehicle-repair/domain"
+	"github.com/go-playground/validator/v10"
 )
 
 type service struct {
@@ -45,7 +48,21 @@ func (s service) Save(ctx context.Context, customerData domain.CustomerData) dom
 	customer := domain.Customer{
 		Name:     customerData.Name,
 		Phone:    customerData.Phone,
-		CratedAt: time.Now(),
+		CretedAt: time.Now(),
+	}
+
+	validate := validator.New()
+	errValidate := validate.Struct(customer)
+	if errValidate != nil {
+		// every field validation
+		var errMsg string
+		for _, err := range errValidate.(validator.ValidationErrors) {
+			errMsg = fmt.Sprintf("%s %s is required:", errMsg, err.Field())
+		}
+		return domain.ApiResponse{
+			Code:    "400",
+			Message: strings.TrimSpace(errMsg),
+		}
 	}
 
 	err := s.customerRepository.Insert(ctx, &customer)
