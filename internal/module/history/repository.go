@@ -50,7 +50,7 @@ func (r repository) FindByVehicle(ctx context.Context, id int64) (result []domai
 
 func (r repository) Insert(ctx context.Context, detail *domain.HistoryDetails) error {
 
-	query := "INSERT INTO history_details (pic,plat_number,notes,customer_id,vehicle_id) VALUES (?, ?, ?, ?, ?)"
+	query := "INSERT INTO history_details (plate_number,pic,notes,customer_id,vehicle_id) VALUES (?, ?, ?, ?, ?)"
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
