@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-type ApiResponse struct {
+type ApiResponse  struct {
 	TraceID   string      `json:"trace_id"`
 	Timestamp time.Time   `json:"created_at"`
 	Code      string      `json:"code"`

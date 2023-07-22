@@ -7,11 +7,11 @@ import (
 
 type HistoryDetails struct {
 	ID         int64     `db:"id"`
-	Pic        string    `db:"pic"`
-	PlatNumber string    `db:"plat_number"`
-	Notes      string    `db:"notes"`
-	CustomerID int64     `db:"customer_id"`
-	VehicleID  int64     `db:"vehicle_id"`
+	Pic        string    `db:"pic" form:"pic" validate:"required"`
+	PlatNumber string    `db:"plate_number" form:"plate_number" validate:"required"`
+	Notes      string    `db:"notes" form:"notes" validate:"required"`
+	CustomerID int64     `db:"customer_id" form:"customer_id" validate:"required"`
+	VehicleID  int64     `db:"vehicle_id" form:"vehicle_id" validate:"required"`
 	CreatedAt  time.Time `db:"created_at"`
 }
 
@@ -26,7 +26,7 @@ type HistoryService interface {
 type HistoryData struct {
 	ID         int64  `json:"id"`
 	Pic        string `json:"pic"`
-	PlatNumber string `json:"plat_number"`
+	PlatNumber string `json:"plate_number"`
 	Notes      string `json:"notes"`
 	CustomerID int64  `json:"customer_id"`
 	VehicleID  int64  `json:"vehicle_id"`

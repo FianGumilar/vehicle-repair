@@ -34,7 +34,7 @@ type VehicleHistoricalRequest struct {
 	VIN        string `json:"vin"`
 	Brand      string `json:"brand"`
 	Pic        string `json:"pic"`
-	PlatNumber string `json:"plat_number"`
+	PlatNumber string `json:"plate_number"`
 	Notes      string `json:"notes"`
 	CustomerId int64  `json:"customer_id"`
 }
